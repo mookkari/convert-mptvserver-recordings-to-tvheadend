@@ -1,15 +1,15 @@
 import xml.etree.ElementTree as ET
-import sys
 import datetime, time
 import json
 import os
 import hashlib
 
-print(sys.version)
 
-baseDir = "\\\\10.8.3.1\\Opnames\\"
-baseServerDir = "/srv/ZFSDisk/Opnames/"
+owner = "admin" #one of the usernames in tvheadend
+baseServerDir = "/srv/ZFSDisk/Opnames/" #where your MP recordings are
 baseTVHlogDir = "/home/hts/.hts/tvheadend/dvr/log"
+configHash = "3d6a906a6b6ad5ca25867270db2f192e" #one of the hashes found in tvheadend/dvr/config
+channelHash = "3af7cb4eae5dfa8c2f0e03d0c641ef49" #pick one, it doesn't matter which one, but it should (probably) exist
 
 
 def get_filepaths(directory):
@@ -32,17 +32,17 @@ def get_filepaths(directory):
 
     return file_paths  # Self-explanatory.
 
-# Run the above function and store its results in a variable.   
+# get the all xml recording files
 xmlFiles = get_filepaths(baseServerDir)
 
 
 
+print('Found ' + str(len(xmlFiles)) + ' recording files...')
+
 for recXmlFile in xmlFiles:
-    print(recXmlFile)
+    print('Read:\t' + recXmlFile)
 
     recFile = recXmlFile.replace('xml', 'ts').replace('\\', '/')
-    print(recFile)
-
 
     #read data from MediaPortal xml
     tree = ET.parse(recXmlFile)
@@ -68,9 +68,6 @@ for recXmlFile in xmlFiles:
             value = value.replace('\n      ', '')
         data[name] = value
 
-    #print(data)
-
-
     #make json for tvheadend
     jd = {}
 
@@ -79,7 +76,7 @@ for recXmlFile in xmlFiles:
     jd["start_extra"] = 0
     jd["stop"] = data['ENDTIME']
     jd["stop_extra"] = 0
-    jd["channel"] = "3af7cb4eae5dfa8c2f0e03d0c641ef49"
+    jd["channel"] = channelHash
     jd["channelname"] = data['CHANNEL_NAME']
     jd["title"] = {}
     jd["title"]["dut"] = data['TITLE']
@@ -92,9 +89,9 @@ for recXmlFile in xmlFiles:
     jd["removal"] = 0
     jd["playposition"] = 0
     jd["playcount"] = 2
-    jd["config_name"] = "3d6a906a6b6ad5ca25867270db2f192e"
-    jd["owner"] = "admin"
-    jd["creator"] = "admin"
+    jd["config_name"] = configHash
+    jd["owner"] = owner
+    jd["creator"] = owner
     jd["errorcode"] = 0
     jd["errors"] = 0
     jd["data_errors"] = 0
@@ -115,10 +112,15 @@ for recXmlFile in xmlFiles:
     jd["files"][0]["stop"] = data['ENDTIME']+300
 
     jsonString = json.dumps(jd, sort_keys=True, indent="\t").encode('utf-8');
-    #print(jsonString)
+
+    #calculate filename hash
     md5name = hashlib.md5(jsonString).hexdigest()
-    print(md5name)
-    if not os.path.exists(baseTVHlogDir + '/MPimport/'):
-        os.mkdir(baseTVHlogDir + '/MPimport/')
-    with open(baseTVHlogDir + '/MPimport/' + md5name, 'w') as outfile:
+
+    #write to file
+    writePath = baseTVHlogDir + '/MPimport/'
+    print('Write:\t' + writePath+md5name)
+    if not os.path.exists(writePath):
+        os.mkdir(writePath)
+
+    with open(writePath + md5name, 'w') as outfile:
         json.dump(jd, outfile)
