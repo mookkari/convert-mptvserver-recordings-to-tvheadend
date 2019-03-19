@@ -72,18 +72,18 @@ for recXmlFile in xmlFiles:
     jd = {}
 
     jd["enabled"] = True
-    jd["start"] = data['STARTTIME']
+    jd["start"] = data.get('STARTTIME', int(os.stat(recXmlFile)[-2]))
     jd["start_extra"] = 0
-    jd["stop"] = data['ENDTIME']
+    jd["stop"] = data.get('ENDTIME', int(os.stat(recXmlFile)[-2])+300)
     jd["stop_extra"] = 0
     jd["channel"] = channelHash
-    jd["channelname"] = data['CHANNEL_NAME']
+    jd["channelname"] = data.get('CHANNEL_NAME', 'N/A')
     jd["title"] = {}
-    jd["title"]["dut"] = data['TITLE']
+    jd["title"]["dut"] = data.get('TITLE')
     jd["subtitle"] = {}
-    jd["subtitle"]["dut"] = data['SUBTITLE']
+    jd["subtitle"]["dut"] = data.get('SUBTITLE')
     jd["description"] = {}
-    jd["description"]["dut"] = data['DESCRIPTION']
+    jd["description"]["dut"] = data.get('DESCRIPTION')
     jd["pri"] = 2
     jd["retention"] = 0
     jd["removal"] = 0
@@ -108,8 +108,8 @@ for recXmlFile in xmlFiles:
     jd["comment"] = "Imported from MediaPortal"
     jd["files"] = [{}]
     jd["files"][0]["filename"] = recFile
-    jd["files"][0]["start"] = data['STARTTIME']-300
-    jd["files"][0]["stop"] = data['ENDTIME']+300
+    jd["files"][0]["start"] = data.get('STARTTIME', int(os.stat(recXmlFile)[-2]))-300
+    jd["files"][0]["stop"] = data.get('ENDTIME', int(os.stat(recXmlFile)[-2]))+300
 
     jsonString = json.dumps(jd, sort_keys=True, indent="\t").encode('utf-8');
 
